@@ -106,16 +106,18 @@ func printHelp() {
 
 	fmt.Println("OPTIONS:")
 	fmt.Println("If POSTing, give filename of JSON data file (no extension)")
-	fmt.Println("If POSTING, flag -data and enter raw JSON data")
+	fmt.Println("If POSTING, flag -data and enter raw JSON data (NEED TO ESCAPE QUOTES W/IN JSON)g")
 }
 
 func main() {
 	manualData := flag.Bool("manual", false, "Manually JSON data for POST request")
 
-	numFlags := 1
-
 	flag.Parse()
-	args := os.Args[numFlags + 1:]
+	args := os.Args[1:]
+	
+	if args[0] == "-manual" {
+		args = os.Args[2:]
+	}
 
 	// No args provided
 	if len(args) < 1 {
