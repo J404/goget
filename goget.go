@@ -4,12 +4,25 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-
-	// "flag"
+	"flag"
 	"encoding/json"
 	"net/http"
 	"os"
 )
+
+// Returns a pretty-print string of the supplied JSON byte arr
+func jsonToPretty(data []byte) string {
+	var formatted interface{}
+	json.Unmarshal(data, &formatted)
+	jsonStr, err := json.MarshalIndent(formatted, "", "  ")
+
+	if err != nil {
+		fmt.Println("An error occurred parsing body of response")
+		os.Exit(1)
+	}
+
+	return string(jsonStr)
+}
 
 func getData(url string) {
 	res, err := http.Get(url)
@@ -28,38 +41,38 @@ func getData(url string) {
 		return
 	}
 
-	// If we get to this point, no errors
-	// Parse body and pretty-print
-	var bodyObj interface{}
-	json.Unmarshal(body, &bodyObj)
-	formatBody, err := json.MarshalIndent(bodyObj, "", "  ")
-
-	if err != nil {
-		fmt.Println("An error occurred parsing body of response")
-		return
-	}
-
-	strBody := string(formatBody)
 	fmt.Println("Response:")
-	fmt.Println(strBody)
+	fmt.Println(jsonToPretty(body))
 
 	defer res.Body.Close()
 }
 
-func postData(url, filename string) {
-	// Convert file to JSON object for post
-	file, err := os.Open(filename + ".json")
+func postData(url, filename string, manualData bool) {
+	var body *bytes.Buffer
 
-	if err != nil {
-		fmt.Println("An error occurred reading JSON file")
-		return
+
+	// If no manual data, get data from json file
+	if !manualData {
+		// Convert file to JSON object for post
+		file, err := os.Open(filename + ".json")
+
+		if err != nil {
+			fmt.Println("An error occurred reading JSON file")
+			return
+		}
+
+		defer file.Close()
+
+		// Read file for sending
+		data, _ := io.ReadAll(file)
+		body = bytes.NewBuffer(data)
+	} else {
+		
+		// Otherwise, "filename" should be treated as raw JSON data
+		byteArr := []byte(filename)
+		body = bytes.NewBuffer(byteArr)
 	}
-
-	defer file.Close()
-
-	// Read file for sending
-	data, _ := io.ReadAll(file)
-	body := bytes.NewBuffer(data)
+	
 
 	res, err := http.Post(url, "application/json", body)
 
@@ -79,12 +92,30 @@ func postData(url, filename string) {
 		return
 	}
 
-	respStr := string(respBody)
-	fmt.Println(respStr)
+	fmt.Println("Response:")
+	fmt.Println(jsonToPretty(respBody))
+}
+
+func printHelp() {
+	fmt.Println("goget <FLAGS> <METHOD> <URL> <OPTIONS>")
+
+	fmt.Println("FLAGS")
+	fmt.Println("-manual: enter JSON object manually ({\"KEY\":\"VALUE\"})")
+	fmt.Println("METHOD: get, post")
+	fmt.Println("URL: url to query")
+
+	fmt.Println("OPTIONS:")
+	fmt.Println("If POSTing, give filename of JSON data file (no extension)")
+	fmt.Println("If POSTING, flag -data and enter raw JSON data")
 }
 
 func main() {
-	args := os.Args[1:]
+	manualData := flag.Bool("manual", false, "Manually JSON data for POST request")
+
+	numFlags := 1
+
+	flag.Parse()
+	args := os.Args[numFlags + 1:]
 
 	// No args provided
 	if len(args) < 1 {
@@ -93,16 +124,18 @@ func main() {
 	}
 
 	if args[0] == "help" {
-		fmt.Println("goget <METHOD> <URL> <OPTIONS>")
-		fmt.Println("METHOD: get, post")
+		printHelp()
+
 	// If not help, send command thru switch
 	} else {
 		switch args[0] {
 		case "get":
 			getData(args[1])
 		case "post":
-			postData(args[1], args[2])
-			
+			if args[2] != "" {
+				postData(args[1], args[2], *manualData)
+			}
+
 		// Incorrect command provided
 		default:
 			fmt.Println("Invalid command; use \"goget help\" if confused or stuck")
