@@ -100,13 +100,13 @@ func printHelp() {
 	fmt.Println("goget <FLAGS> <METHOD> <URL> <OPTIONS>")
 
 	fmt.Println("FLAGS")
-	fmt.Println("-manual: enter JSON object manually ({\"KEY\":\"VALUE\"})")
+	fmt.Println("-manual: enter JSON object manually (\"{\"KEY\":\"VALUE\"}\")")
 	fmt.Println("METHOD: get, post")
 	fmt.Println("URL: url to query")
 
 	fmt.Println("OPTIONS:")
 	fmt.Println("If POSTing, give filename of JSON data file (no extension)")
-	fmt.Println("If POSTING, flag -data and enter raw JSON data (NEED TO ESCAPE QUOTES W/IN JSON)g")
+	fmt.Println("If POSTing, flag -manual and enter raw JSON data (NEED TO ESCAPE QUOTES W/IN JSON)")
 }
 
 func main() {
